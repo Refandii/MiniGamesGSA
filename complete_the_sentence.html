@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete The Sentence - Tech & AI</title>
+    <!-- Tambahan Library Tone.js untuk Audio (Telah Diperbarui) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --primary: #a855f7; /* Neon Purple */
+            --primary-hover: #9333ea;
+            --secondary: #3b82f6; /* Tech Blue */
+            --bg-gradient: linear-gradient(135deg, #000000 0%, #171033 50%, #0f172a 100%);
+            --card-bg: rgba(15, 23, 42, 0.85); /* Dark Glass */
+            --card-border: 1px solid rgba(168, 85, 247, 0.3);
+            --text-main: #ffffff; /* White */
+            --text-muted: #94a3b8;
+            --danger: #ef4444; /* Red */
+            --success: #10b981; /* Green */
+            --input-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 16px;
+            border: var(--card-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(168, 85, 247, 0.2);
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .screen {
+            display: none;
+            padding: 40px 30px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .rules-list {
+            text-align: left;
+            margin: 0 auto 25px auto;
+            max-width: 400px;
+            color: var(--text-main);
+        }
+
+        .rules-list li {
+            margin-bottom: 10px;
+            margin-left: 20px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            transition: all 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #334155;
+            box-shadow: none;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Header Info (Score, Streak & Timer) */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .timer {
+            color: #ffffff;
+            background: rgba(59, 130, 246, 0.3);
+            border: 1px solid var(--secondary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .timer.warning {
+            color: white;
+            background: var(--danger);
+            animation: pulse 1s infinite;
+        }
+
+        .streak-badge {
+            color: #f59e0b;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 8px;
+            transition: all 0.3s;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Question Area */
+        .question-container {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+        }
+
+        input.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.15); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        input.wrong { border-color: var(--danger); background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+
+        .feedback {
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 15px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--danger); }
+
+        .final-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Buff Screen & Indicators */
+        .buff-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .buff-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .buff-card:hover {
+            border-color: var(--secondary);
+            background: rgba(59, 130, 246, 0.1);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        .buff-card h3 {
+            color: var(--text-main);
+            text-align: left;
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+        
+        .buff-card p {
+            text-align: left;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        .active-buffs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .buff-badge-item {
+            background: var(--primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .buff-badge-item.shield { background: var(--success); }
+        .buff-badge-item.double { background: #f59e0b; }
+
+        /* Remediation Styles */
+        .remediation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .remediation-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--primary);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            transition: all 0.2s;
+            line-height: 1.4;
+        }
+
+        .remediation-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+        }
+
+        /* Animations & Extras */
+        .countdown-text {
+            font-size: 80px;
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            animation: popIn 1s infinite;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        .loader {
+            border: 8px solid rgba(255,255,255,0.1);
+            border-top: 8px solid var(--primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- START SCREEN -->
+        <div id="start-screen" class="screen active">
+            <h1>Complete The Sentence</h1>
+            <p>Uji pengetahuanmu dari materi AoGi (GSA, Prompting, & Fitur Google)!</p>
+            
+            <ul class="rules-list">
+                <li>Lengkapi kalimat dengan <b>satu kata</b> yang hilang.</li>
+                <li>Waktu menjawab untuk setiap soal hanya <b>10 detik</b>.</li>
+                <li>🔥 <b>Sistem Streak:</b> Jawaban benar berturut-turut memberikan poin ekstra.</li>
+                <li>Pilih kemampuan (buff) setiap melewati 5 soal.</li>
+            </ul>
+
+            <button class="btn" onclick="startGame()">Mulai Permainan</button>
+        </div>
+
+        <!-- COUNTDOWN SCREEN -->
+        <div id="countdown-screen" class="screen">
+            <div id="countdown-number" class="countdown-text">3</div>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div>Skor: <span id="score-display">0</span> <span id="streak-display" class="streak-badge"></span></div>
+                <div>Soal <span id="question-number">1</span>/<span id="total-questions">25</span></div>
+                <div id="timer-display" class="timer">10s</div>
+            </div>
+
+            <div class="active-buffs" id="active-buffs-container">
+                <!-- Buff badges will appear here -->
+            </div>
+
+            <div class="question-container" id="question-text">
+                <!-- Question will appear here -->
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="answer-input" placeholder="Ketik kata yang hilang..." autocomplete="off">
+                <button class="btn" id="submit-btn" onclick="submitAnswer()">Kirim Jawaban</button>
+            </div>
+
+            <div id="feedback-msg" class="feedback"></div>
+        </div>
+
+        <!-- REMEDIATION SCREEN -->
+        <div id="remediation-screen" class="screen">
+            <h2>Kesempatan Remidi!</h2>
+            <p>Kamu memiliki beberapa soal yang salah. Pilih <b>SATU</b> soal untuk diperbaiki dalam waktu 10 detik!</p>
+            <div class="remediation-list" id="remediation-list-container">
+                <!-- Buttons added dynamically -->
+            </div>
+            <button class="btn" style="margin-top: 20px; background: var(--text-muted);" onclick="endGame()">Lewati Remidi</button>
+        </div>
+
+        <!-- CALCULATING SCREEN -->
+        <div id="calculating-screen" class="screen">
+            <h2>Menghitung Skor...</h2>
+            <div class="loader"></div>
+            <p>Memproses statistik permainanmu...</p>
+        </div>
+
+        <!-- END SCREEN -->
+        <div id="end-screen" class="screen">
+            <h2>Permainan Selesai!</h2>
+            <p>Terima kasih telah menyimak materi hari ini.</p>
+            <div class="final-score" id="final-score-display">0</div>
+            <p id="evaluation-msg"></p>
+            <button class="btn" onclick="resetGame()">Main Lagi</button>
+        </div>
+
+        <!-- BUFF SCREEN -->
+        <div id="buff-screen" class="screen">
+            <h2>Pilih Kemampuan (Buff)</h2>
+            <p>Pilih satu bantuan untuk mempermudahmu di soal-soal berikutnya!</p>
+            <div class="buff-options">
+                <div class="buff-card" onclick="selectBuff('time')">
+                    <h3>⏳ Ekstra Waktu</h3>
+                    <p>Waktu menjawab menjadi 25 detik untuk 3 soal ke depan.</p>
+                </div>
+                <div class="buff-card" onclick="selectBuff('double')">
+                    <h3>⭐ Skor Ganda</h3>
+                    <p>Mendapatkan poin 2x lipat jika benar, berlaku untuk 3 soal ke depan.</p>
+                </div>
+                <div class="buff-card" onclick="selectBuff('shield')">
+                    <h3>🛡️ Perisai Kesalahan</h3>
+                    <p>Mendapat 1x kesempatan menjawab ulang saat jawaban salah/waktu habis.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BREAK SCREEN (NEW) -->
+        <div id="break-screen" class="screen">
+            <h2>Waktu Istirahat ☕</h2>
+            <p>Tarik napas sejenak! Persiapkan dirimu untuk soal berikutnya.</p>
+            <div class="countdown-text" id="break-timer-display" style="font-size: 60px; margin: 30px 0;">5</div>
+            <button class="btn" onclick="skipBreak()">Lanjutkan Sekarang ⏭️</button>
+        </div>
+    </div>
+
+    <script>
+        // Database Soal (Fokus: GSA, Prompting, Paket Google)
+        const questions = [
+            { text: "GSA adalah program resmi perwakilan mahasiswa, singkatan dari Google Student ________.", answers: ["ambassador"] },
+            { text: "GSA bertugas mewakili Google sebagai duta teknologi di ________ masing-masing.", answers: ["kampus", "universitas"] },
+            { text: "Syarat utama pendaftaran GSA adalah berstatus sebagai ________ aktif.", answers: ["mahasiswa"] },
+            { text: "Salah satu benefit menjadi GSA adalah mendapat ________ langsung dari pakar Google.", answers: ["mentorship", "bimbingan", "pelatihan"] },
+            { text: "Jaringan nasional memungkinkan GSA berkolaborasi dengan mahasiswa dari berbagai ________.", answers: ["perguruan tinggi", "kampus", "universitas"] },
+            { text: "Peserta seleksi GSA wajib membuat video perkenalan yang disebut 'No Cut No ________'.", answers: ["edit"] },
+            { text: "Sebagai kampanye diri, peserta GSA juga wajib mengunggah ________ di media sosial.", answers: ["twibbon", "twibon"] },
+            { text: "Tugas eksplorasi wajib saat seleksi GSA berkaitan dengan model AI bernama ________.", answers: ["gemini"] },
+            { text: "Teks atau kalimat instruksi yang diberikan kepada AI disebut ________.", answers: ["prompt"] },
+            { text: "Struktur prompt yang menetapkan keahlian AI (misal: 'Bertindaklah sebagai koki') disebut ________.", answers: ["persona", "peran"] },
+            { text: "Struktur prompt yang mendeskripsikan secara jelas apa yang harus dikerjakan AI disebut ________.", answers: ["tugas", "task"] },
+            { text: "Struktur prompt yang berisi informasi latar belakang (misal: 'Saya alergi laut') disebut ________.", answers: ["konteks", "context"] },
+            { text: "Struktur prompt yang mengatur bentuk output (misal: 'tabel', 'poin') disebut ________.", answers: ["format"] },
+            { text: "Arahan prompt eksklusif harus jelas tanpa ambiguitas atau bersifat ________.", answers: ["objektif", "obyektif", "spesifik"] },
+            { text: "Hasil akhir dari prompt eksklusif dapat diperkirakan bentuknya, atau bersifat ________.", answers: ["prediktif"] },
+            { text: "Menggunakan elemen 'konteks' dapat mencegah AI memberikan jawaban asal atau ________.", answers: ["asbun", "ngawur", "salah"] },
+            { text: "Fenomena ketika AI mengarang informasi dan menyajikannya seolah fakta disebut ________.", answers: ["halusinasi", "hallucination"] },
+            { text: "Tips pertama membuat prompt adalah tulislah seolah Anda berbicara dengan ________.", answers: ["manusia", "orang"] },
+            { text: "Mahasiswa berhak mendapat langganan Google AI Plus secara ________ selama 12 bulan.", answers: ["gratis", "free"] },
+            { text: "Paket Google AI Plus memberikan penyimpanan cloud Google One sebesar ________ GB.", answers: ["400", "empat ratus"] },
+            { text: "Paket yang memberikan penyimpanan cloud sangat besar hingga 5 TB adalah Google AI ________.", answers: ["pro"] },
+            { text: "Gemini Advance/Pro mampu membuat teks, serta menghasilkan ________ dan video dinamis.", answers: ["gambar", "image"] },
+            { text: "Fitur 'Deep Research' (Riset Mendalam) hanya tersedia di paket langganan Google AI ________.", answers: ["pro"] },
+            { text: "Belajar teknologi lewat studi kasus nyata disebut Project-Base ________.", answers: ["learning"] },
+            { text: "Partner edukasi Google di Indonesia yang memberikan benefit diskon kelas IT adalah ________.", answers: ["dicoding"] },
+            { text: "Akun Google Workspace for Education sering kali memberikan fitur tambahan yang sangat membantu tugas ________.", answers: ["kampus", "kuliah", "akademik"] },
+            { text: "Kemampuan Gemini untuk memahami dan memproses berbagai jenis informasi (teks, gambar, audio) disebut ________.", answers: ["multimodal"] },
+            { text: "Jika kamu ingin Gemini memperbaiki tata bahasa esaimu, kamu bisa memberinya peran sebagai seorang ________.", answers: ["editor", "korektor", "proofreader"] },
+            { text: "Mengevaluasi hasil prompt dan mengubah strukturnya berulang kali demi hasil terbaik disebut proses ________.", answers: ["iterasi", "iteratif"] },
+            { text: "Google Student Ambassador adalah peluang berharga untuk membangun karier dan mengembangkan jiwa ________.", answers: ["kepemimpinan", "leadership"] }
+        ];
+
+        // Game State Variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = 10;
+        let timerInterval;
+        let isProcessing = false;
+        
+        let streak = 0;
+        let wrongQuestions = [];
+        let isRemediation = false;
+        let remediationQuestionIndex = -1;
+
+        // Break & Audio Variables
+        let breakInterval;
+        let breakTimeLeft = 10;
+        let bgmSynth, bgmLoop;
+        let sfxSynth;
+        let isAudioInit = false;
+
+        // Buff States
+        let buffs = {
+            time: 0,
+            double: 0,
+            shield: 0
+        };
+
+        // DOM Elements
+        const screens = {
+            start: document.getElementById('start-screen'),
+            countdown: document.getElementById('countdown-screen'),
+            game: document.getElementById('game-screen'),
+            end: document.getElementById('end-screen'),
+            buff: document.getElementById('buff-screen'),
+            remediation: document.getElementById('remediation-screen'),
+            calculating: document.getElementById('calculating-screen'),
+            break: document.getElementById('break-screen')
+        };
+        const elements = {
+            score: document.getElementById('score-display'),
+            streak: document.getElementById('streak-display'),
+            qNumber: document.getElementById('question-number'),
+            totalQ: document.getElementById('total-questions'),
+            timer: document.getElementById('timer-display'),
+            question: document.getElementById('question-text'),
+            input: document.getElementById('answer-input'),
+            submitBtn: document.getElementById('submit-btn'),
+            feedback: document.getElementById('feedback-msg'),
+            finalScore: document.getElementById('final-score-display'),
+            evaluation: document.getElementById('evaluation-msg'),
+            activeBuffs: document.getElementById('active-buffs-container'),
+            remediationList: document.getElementById('remediation-list-container'),
+            breakTimer: document.getElementById('break-timer-display')
+        };
+
+        elements.totalQ.innerText = questions.length;
+
+        elements.input.addEventListener("keypress", function(event) {
+            if (event.key === "Enter" && !isProcessing) {
+                event.preventDefault();
+                submitAnswer();
+            }
+        });
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        // Initialize Audio (BGM & SFX)
+        async function initAudio() {
+            if (isAudioInit) return;
+            
+            // Pengecekan jika library Tone gagal dimuat karena masalah koneksi/pemblokiran
+            if (typeof Tone === 'undefined') {
+                console.warn("Tone.js gagal dimuat. Audio dimatikan.");
+                return;
+            }
+
+            await Tone.start();
+            
+            // SFX Synth Setup
+            sfxSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            sfxSynth.volume.value = -5;
+            
+            // BGM Synth Setup (Arpeggio loop)
+            bgmSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            bgmSynth.volume.value = -20; 
+
+            const notes = ["C4", "E4", "G4", "B4", "C5", "G4", "E4", "C4"];
+            let step = 0;
+            bgmLoop = new Tone.Loop(time => {
+                bgmSynth.triggerAttackRelease(notes[step % notes.length], "8n", time);
+                step++;
+            }, "4n");
+            
+            Tone.Transport.bpm.value = 110;
+            Tone.Transport.start();
+            bgmLoop.start(0);
+            
+            isAudioInit = true;
+        }
+
+        function playSfx(type) {
+            if (!sfxSynth) return;
+            if (type === 'correct') {
+                sfxSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+            } else if (type === 'wrong') {
+                sfxSynth.triggerAttackRelease(["C3", "Eb3"], "8n");
+            } else if (type === 'buff') {
+                sfxSynth.triggerAttackRelease(["G4", "B4", "D5", "G5"], "4n");
+            } else if (type === 'click') {
+                sfxSynth.triggerAttackRelease("C5", "16n");
+            }
+        }
+
+        async function startGame() {
+            await initAudio();
+            playSfx('click');
+
+            currentQuestionIndex = 0;
+            score = 0;
+            streak = 0;
+            wrongQuestions = [];
+            isRemediation = false;
+            buffs = { time: 0, double: 0, shield: 0 };
+            
+            elements.score.innerText = score;
+            elements.streak.innerText = "";
+            
+            switchScreen('countdown');
+            let count = 3;
+            let countElem = document.getElementById('countdown-number');
+            countElem.innerText = count;
+            
+            let countInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countElem.innerText = count;
+                } else if (count === 0) {
+                    countElem.innerText = "Mulai!";
+                } else {
+                    clearInterval(countInterval);
+                    switchScreen('game');
+                    loadQuestion();
+                }
+            }, 1000);
+        }
+
+        function updateBuffDisplay() {
+            elements.activeBuffs.innerHTML = '';
+            if (buffs.time > 0) {
+                elements.activeBuffs.innerHTML += `<div class="buff-badge-item">⏳ Ekstra Waktu (${buffs.time})</div>`;
+            }
+            if (buffs.double > 0) {
+                elements.activeBuffs.innerHTML += `<div class="buff-badge-item double">⭐ Skor 2x (${buffs.double})</div>`;
+            }
+            if (buffs.shield > 0) {
+                elements.activeBuffs.innerHTML += `<div class="buff-badge-item shield">🛡️ Perisai (${buffs.shield})</div>`;
+            }
+        }
+
+        function updateStreakDisplay() {
+            if (streak > 1) {
+                let streakBonus = (streak - 1) * 5;
+                elements.streak.innerText = `🔥 Streak x${streak} (+${streakBonus} Pts)`;
+            } else {
+                elements.streak.innerText = "";
+            }
+        }
+
+        function loadQuestion() {
+            isProcessing = false;
+            updateBuffDisplay();
+            
+            // Konfigurasi Mode Remidi vs Normal
+            if (isRemediation) {
+                timeLeft = 10; // Remidi waktu normal (strict)
+                elements.qNumber.innerText = "Remidi";
+                elements.totalQ.parentElement.style.display = "none";
+                elements.question.innerHTML = questions[remediationQuestionIndex].text.replace("________", "<b>________</b>");
+                elements.activeBuffs.innerHTML = '<div class="buff-badge-item" style="background:#ef4444">Mode Remidi (10s)</div>';
+            } else {
+                timeLeft = buffs.time > 0 ? 25 : 10;
+                elements.qNumber.innerText = currentQuestionIndex + 1;
+                elements.totalQ.parentElement.style.display = "inline";
+                elements.question.innerHTML = questions[currentQuestionIndex].text.replace("________", "<b>________</b>");
+            }
+            
+            elements.timer.innerText = timeLeft + "s";
+            elements.timer.classList.remove('warning');
+            
+            elements.input.value = "";
+            elements.input.className = "";
+            elements.input.disabled = false;
+            elements.submitBtn.disabled = false;
+            elements.feedback.innerText = "";
+            elements.feedback.className = "feedback";
+            
+            elements.input.focus();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            elements.timer.innerText = timeLeft + "s";
+            
+            if (timeLeft <= 3) {
+                elements.timer.classList.add('warning');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                handleTimeOut();
+            }
+        }
+
+        function submitAnswer() {
+            if (isProcessing) return;
+            
+            const userAnswer = elements.input.value.trim().toLowerCase();
+            let targetIndex = isRemediation ? remediationQuestionIndex : currentQuestionIndex;
+            const correctAnswers = questions[targetIndex].answers;
+
+            // Jika salah tapi punya Shield (Tidak berlaku saat remidi)
+            if (!isRemediation && !correctAnswers.includes(userAnswer) && buffs.shield > 0) {
+                buffs.shield--;
+                playSfx('buff');
+                streak = 0; // Streak terputus karena salah jawab pertama
+                updateStreakDisplay();
+                updateBuffDisplay();
+                
+                elements.input.value = "";
+                elements.input.classList.add('wrong');
+                setTimeout(() => elements.input.classList.remove('wrong'), 500);
+                elements.feedback.innerText = "🛡️ Perisai aktif! Kesempatan menjawab ulang diberikan.";
+                elements.feedback.className = "feedback correct"; 
+                return;
+            }
+
+            isProcessing = true;
+            clearInterval(timerInterval);
+            
+            elements.input.disabled = true;
+            elements.submitBtn.disabled = true;
+
+            if (correctAnswers.includes(userAnswer)) {
+                // Jawaban Benar
+                streak++;
+                let basePts = 10;
+                let streakBonus = (streak - 1) * 5;
+                let totalPts = basePts + streakBonus;
+                
+                // Cek buff double skor (Hanya berlaku mode normal)
+                if (!isRemediation && buffs.double > 0) totalPts *= 2; 
+
+                score += totalPts;
+                elements.score.innerText = score;
+                updateStreakDisplay();
+                
+                elements.input.classList.add('correct');
+                elements.feedback.innerText = `Benar! +${totalPts} Poin`;
+                elements.feedback.classList.add('correct');
+
+                // Jika di mode remidi, hapus dari list soal yang salah
+                if (isRemediation) {
+                    wrongQuestions = wrongQuestions.filter(q => q !== remediationQuestionIndex);
+                }
+                playSfx('correct');
+            } else {
+                // Jawaban Salah
+                streak = 0;
+                updateStreakDisplay();
+                
+                if (!isRemediation && !wrongQuestions.includes(currentQuestionIndex)) {
+                    wrongQuestions.push(currentQuestionIndex);
+                }
+                
+                elements.input.classList.add('wrong');
+                elements.feedback.innerText = `Salah! Jawaban: ${correctAnswers[0].toUpperCase()}`;
+                elements.feedback.classList.add('wrong');
+                playSfx('wrong');
+            }
+
+            setTimeout(() => {
+                if (isRemediation) {
+                    endGame();
+                } else {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < questions.length) {
+                        showBreakScreen(); // Jeda Istirahat
+                    } else {
+                        if (wrongQuestions.length > 0) {
+                            showRemediationScreen();
+                        } else {
+                            endGame();
+                        }
+                    }
+                }
+            }, 1500);
+        }
+
+        function handleTimeOut() {
+            // Logika penggunaan Shield saat waktu habis (Tidak berlaku saat remidi)
+            if (!isRemediation && buffs.shield > 0) {
+                buffs.shield--;
+                playSfx('buff');
+                streak = 0; // Streak terputus
+                updateStreakDisplay();
+                updateBuffDisplay();
+                
+                timeLeft = buffs.time > 0 ? 25 : 10; 
+                elements.timer.innerText = timeLeft + "s";
+                elements.timer.classList.remove('warning');
+                elements.feedback.innerText = "🛡️ Perisai menahan waktu habis! Jawab dengan cepat!";
+                elements.feedback.className = "feedback correct";
+                timerInterval = setInterval(updateTimer, 1000);
+                return;
+            }
+
+            isProcessing = true;
+            streak = 0;
+            updateStreakDisplay();
+            
+            elements.input.disabled = true;
+            elements.submitBtn.disabled = true;
+            
+            let targetIndex = isRemediation ? remediationQuestionIndex : currentQuestionIndex;
+            if (!isRemediation && !wrongQuestions.includes(currentQuestionIndex)) {
+                wrongQuestions.push(currentQuestionIndex);
+            }
+            
+            const correctAnswers = questions[targetIndex].answers;
+            elements.input.classList.add('wrong');
+            elements.feedback.innerText = `Waktu Habis! Jawaban: ${correctAnswers[0].toUpperCase()}`;
+            elements.feedback.classList.add('wrong');
+            playSfx('wrong');
+
+            setTimeout(() => {
+                if (isRemediation) {
+                    endGame();
+                } else {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < questions.length) {
+                        showBreakScreen(); // Jeda Istirahat
+                    } else {
+                        if (wrongQuestions.length > 0) {
+                            showRemediationScreen();
+                        } else {
+                            endGame();
+                        }
+                    }
+                }
+            }, 2000);
+        }
+
+        function showBreakScreen() {
+            // Kurangi durasi buff sebelum break
+            if (buffs.time > 0) buffs.time--;
+            if (buffs.double > 0) buffs.double--;
+
+            switchScreen('break');
+            breakTimeLeft = 5;
+            elements.breakTimer.innerText = breakTimeLeft;
+            
+            clearInterval(breakInterval);
+            breakInterval = setInterval(() => {
+                breakTimeLeft--;
+                elements.breakTimer.innerText = breakTimeLeft;
+                if (breakTimeLeft <= 0) {
+                    skipBreak();
+                }
+            }, 1000);
+        }
+
+        function skipBreak() {
+            clearInterval(breakInterval);
+            playSfx('click');
+            
+            if (currentQuestionIndex % 5 === 0) {
+                switchScreen('buff');
+            } else {
+                switchScreen('game');
+                loadQuestion();
+            }
+        }
+
+        function selectBuff(type) {
+            if (type === 'time') buffs.time += 3;
+            if (type === 'double') buffs.double += 3;
+            if (type === 'shield') buffs.shield += 1;
+            
+            playSfx('buff');
+            switchScreen('game');
+            loadQuestion();
+        }
+
+        function showRemediationScreen() {
+            switchScreen('remediation');
+            elements.remediationList.innerHTML = '';
+            
+            wrongQuestions.forEach(qIndex => {
+                let btn = document.createElement('button');
+                btn.className = 'remediation-btn';
+                let shortText = questions[qIndex].text.replace("________", "...");
+                btn.innerHTML = `<b>Soal ${qIndex + 1}</b><br>${shortText}`;
+                btn.onclick = () => startRemediation(qIndex);
+                elements.remediationList.appendChild(btn);
+            });
+        }
+
+        function startRemediation(qIndex) {
+            isRemediation = true;
+            remediationQuestionIndex = qIndex;
+            switchScreen('game');
+            loadQuestion();
+        }
+
+        function endGame() {
+            switchScreen('calculating');
+            
+            setTimeout(() => {
+                switchScreen('end');
+                elements.finalScore.innerText = `${score} Poin`;
+                
+                if (score >= 500) {
+                    elements.evaluation.innerText = "Luar biasa! Penguasaan materi AoGi-mu sangat sempurna!";
+                } else if (score >= 250) {
+                    elements.evaluation.innerText = "Kerja bagus! Kamu memahami GSA dan Prompting dengan cukup baik.";
+                } else {
+                    elements.evaluation.innerText = "Teruslah eksplorasi teknologi AI dan jangan menyerah!";
+                }
+            }, 2500);
+        }
+
+        function resetGame() {
+            switchScreen('start');
+        }
+    </script>
+</body>
+</html>
